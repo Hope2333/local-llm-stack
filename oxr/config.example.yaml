@@ -1,0 +1,27 @@
+server:
+  host: 127.0.0.1
+  port: 8000
+  workers: 1
+
+layout_analyze_model:
+  url: http://127.0.0.1:8091
+  batch_size: 4
+  max_concurrency: 1
+  timeout: 120
+  retry_times: 2
+  score_threshold: 0.5
+  provides_reading_order: false
+
+oxr_model:
+  model_name: oxr
+  url: http://127.0.0.1:8090/v1
+  max_tokens: 4096
+  max_concurrency: 1
+  timeout: 600
+  retry_times: 1
+
+pipeline:
+  image_output_dir: /tmp/oxr_out
+  full_overlap_dedupe: false
+  table_image_placeholders: false
+  table_image_min_score: 0.5

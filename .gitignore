@@ -1,0 +1,28 @@
+# 模型与权重（体积太大，不进仓库）
+*.gguf
+*.safetensors
+*.pth
+*.bin
+models/
+
+# 机器相关的配置（用 registry.example.json / *.env.example 作为模板）
+gateway/registry.json
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+
+# 运行产物
+*.log
+outputs/
+/tmp/
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+.DS_Store

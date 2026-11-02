@@ -1,0 +1,14 @@
+[Unit]
+Description=OXR aggregator API (layout + model services on demand)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/opt/OXR
+Environment=PYTHONPATH=%h/opt/OXR
+ExecStart=%h/.venvs/oxr/bin/oxr serve --config %h/models/oxr/oxr-config.yaml
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

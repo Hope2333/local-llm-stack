@@ -1,0 +1,16 @@
+[Unit]
+Description=OXR-1.0 model server (OpenAI-compatible, loads lazily, exits when idle)
+Requires=oxr-model.socket
+After=oxr-model.socket
+
+[Service]
+Type=simple
+WorkingDirectory=%h/models/oxr
+Environment=OXR_DEVICE=cuda
+Environment=OXR_DTYPE=bf16
+Environment=OXR_CUDNN=0
+Environment=OXR_IDLE_UNLOAD=60
+Environment=OXR_IDLE_EXIT=300
+ExecStart=%h/.venvs/oxr/bin/python -u %h/models/oxr/oxr_openai_server.py
+Restart=no
+TimeoutStopSec=15

@@ -1,0 +1,17 @@
+[Unit]
+Description=D-FINE layout analysis (loads lazily, exits when idle)
+Requires=layout-dfine.socket
+After=layout-dfine.socket
+
+[Service]
+Type=simple
+WorkingDirectory=%h/opt/OXR/services/layout_analyze
+Environment=PYTHONPATH=%h/opt/OXR/services/layout_analyze
+Environment=MODEL_PATH=%h/models/oxr/layout_analysis/last.pth
+Environment=DFINE_DEVICE=cuda
+Environment=DFINE_CUDA_GRAPH=0
+Environment=LAYOUT_IDLE_UNLOAD=60
+Environment=LAYOUT_IDLE_EXIT=300
+ExecStart=%h/.venvs/oxr/bin/python -u %h/models/oxr/layout_idle.py
+Restart=no
+TimeoutStopSec=15

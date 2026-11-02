@@ -1,0 +1,169 @@
+{
+  "default": "bonsai-9b",
+  "idle_seconds": 300,
+  "port_pool": [
+    8310,
+    8399
+  ],
+  "models": {
+    "bonsai-2b": {
+      "backend": "llama",
+      "kind": "text",
+      "path": "~/models/bonsai2/2B/Ternary-Bonsai-2-2B-PQ2_0.gguf",
+      "mmproj": "~/models/bonsai2/2B/Ternary-Bonsai-2-2B-mmproj-Q8_0.gguf",
+      "ctx": 262144,
+      "device": "Vulkan1",
+      "n_gpu_layers": 99,
+      "threads": 12,
+      "params": "1.88B",
+      "quant": "PQ2_0",
+      "cache_type": "q4_0"
+    },
+    "bonsai-4b": {
+      "backend": "llama",
+      "kind": "text",
+      "path": "~/models/bonsai2/4B/Ternary-Bonsai-2-4B-PQ2_0.gguf",
+      "mmproj": "~/models/bonsai2/4B/Ternary-Bonsai-2-4B-mmproj-Q8_0.gguf",
+      "ctx": 262144,
+      "device": "Vulkan1",
+      "n_gpu_layers": 99,
+      "threads": 12,
+      "params": "4.21B",
+      "quant": "PQ2_0",
+      "cache_type": "q4_0"
+    },
+    "bonsai-9b": {
+      "backend": "llama",
+      "kind": "text",
+      "path": "~/models/bonsai2/9B/Ternary-Bonsai-2-9B-PQ2_0.gguf",
+      "mmproj": "~/models/bonsai2/9B/Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf",
+      "ctx": 262144,
+      "device": "Vulkan1",
+      "n_gpu_layers": 99,
+      "threads": 12,
+      "params": "8.96B",
+      "quant": "PQ2_0",
+      "cache_type": "q4_0",
+      "note": "默认档：262K 上下文全量 GPU，约 48 tok/s"
+    },
+    "bonsai-27b": {
+      "backend": "llama",
+      "kind": "text",
+      "path": "~/models/bonsai2/27B/Ternary-Bonsai-2-27B-PTQ1_0.gguf",
+      "ctx": 65536,
+      "device": "Vulkan1",
+      "n_gpu_layers": 99,
+      "threads": 12,
+      "params": "26.9B",
+      "quant": "PTQ1_0",
+      "cache_type": "q4_0",
+      "note": "纯文本档：去掉 848MiB 视觉权重后 ctx 从 31744 提到 65536，速度不变；需要视觉请把 mmproj 加回并把 ctx 降到 31744"
+    },
+    "oxr": {
+      "backend": "static",
+      "kind": "vision",
+      "url": "http://127.0.0.1:8090/v1",
+      "ctx": 16384,
+      "params": "1.3B",
+      "quant": "bf16"
+    },
+    "qwen35-4b": {
+      "backend": "llama",
+      "kind": "text",
+      "path": "~/models/qwen35-4b/Qwen3.5-4B-Q4_K_M.gguf",
+      "ctx": 131072,
+      "device": "Vulkan1",
+      "n_gpu_layers": 99,
+      "threads": 12,
+      "params": "4B",
+      "quant": "Q4_K_M",
+      "note": "第三方对照组：非三元 Qwen3.5",
+      "cache_type": "q4_0"
+    },
+    "bonsai-27b-long": {
+      "backend": "llama",
+      "kind": "text",
+      "path": "~/models/bonsai2/27B/Ternary-Bonsai-2-27B-PTQ1_0.gguf",
+      "ctx": 131072,
+      "device": "Vulkan1",
+      "n_gpu_layers": 99,
+      "threads": 12,
+      "params": "26.9B",
+      "quant": "PTQ1_0",
+      "cache_type": "q4_0",
+      "note": "128K 长上下文档：FFN 下沉 24 层，注意力/SSM 留 GPU",
+      "override": "blk\\.(4[0-9]|5[0-9]|6[0-3])\\.ffn_.*=CPU"
+    }
+  },
+  "aliases": {
+    "27b-long": "bonsai-27b-long",
+    "long27": "bonsai-27b-long"
+  },
+  "_bench": {
+    "_comment": "实测于 RTX 4060 Laptop 8GB / Ryzen 9 7945HX / Vulkan；prompt ≈1.5K token，tg=解码 tok/s",
+    "bonsai-2b": {
+      "ctx": 262144,
+      "pp": 3514,
+      "tg": 149.7,
+      "vram_mib": 2424
+    },
+    "bonsai-4b": {
+      "ctx": 262144,
+      "pp": 1583,
+      "tg": 78.6,
+      "vram_mib": 4649
+    },
+    "bonsai-9b": {
+      "ctx": 262144,
+      "pp": 1027,
+      "tg": 48.25,
+      "vram_mib": 6018
+    },
+    "bonsai-27b": {
+      "ctx": 65536,
+      "pp": 220,
+      "tg": 25.65,
+      "vram_mib": 7837
+    },
+    "bonsai-27b-long": {
+      "ctx": 131072,
+      "pp": 189,
+      "tg": 12.67,
+      "vram_mib": 7549,
+      "note": "FFN 下沉 24 层到 CPU，注意力/SSM 留 GPU"
+    },
+    "qwen35-4b": {
+      "ctx": 131072,
+      "pp": 204,
+      "tg": 47.05,
+      "vram_mib": 4269
+    },
+    "_offload_compare_27b": {
+      "64K_all_gpu": {
+        "tg": 25.94,
+        "vram": 7449
+      },
+      "72K_ffn7": {
+        "tg": 20.26,
+        "vram": 7210
+      },
+      "96K_ffn12": {
+        "tg": 17.48,
+        "vram": 7627
+      },
+      "112K_ffn16": {
+        "tg": 15.37,
+        "vram": 7468
+      },
+      "128K_ffn20": {
+        "tg": 12.11,
+        "vram": 7571
+      },
+      "128K_kv_to_ram": {
+        "tg": 6.38,
+        "vram": 5833,
+        "note": "-nkvo：KV 过 PCIe，最慢"
+      }
+    }
+  }
+}

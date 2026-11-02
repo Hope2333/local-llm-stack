@@ -1,0 +1,10 @@
+[Unit]
+Description=OXR-1.0 model server socket (on-demand, frees the GPU when idle)
+
+[Socket]
+ListenStream=127.0.0.1:8090
+Accept=no
+Backlog=64
+
+[Install]
+WantedBy=sockets.target

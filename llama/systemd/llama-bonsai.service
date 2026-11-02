@@ -1,0 +1,16 @@
+[Unit]
+Description=llama.cpp server - PrismML build (Bonsai 2 ternary VLM)
+Documentation=https://docs.prismml.com
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=%h/.config/llama-bonsai.env
+ExecStart=%h/.local/bin/llama-bonsai-run
+Restart=on-failure
+RestartSec=5
+# iGPU/GTT 大 KV 场景下避免被 OOM killer 误杀
+MemoryMax=56G
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,10 @@
+[Unit]
+Description=D-FINE layout analysis socket (on-demand, frees the GPU when idle)
+
+[Socket]
+ListenStream=127.0.0.1:8091
+Accept=no
+Backlog=64
+
+[Install]
+WantedBy=sockets.target

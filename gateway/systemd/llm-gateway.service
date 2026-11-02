@@ -1,0 +1,17 @@
+[Unit]
+Description=Multi-dialect LLM gateway (OpenAI / Anthropic / Ollama / Gemini)
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/models/llm_gateway
+Environment=GATEWAY_PORT=8100
+Environment=GATEWAY_IDLE=300
+ExecStart=%h/.venvs/oxr/bin/python -u %h/models/llm_gateway/gateway.py
+Restart=on-failure
+RestartSec=3
+KillMode=mixed
+KillSignal=SIGTERM
+
+[Install]
+WantedBy=default.target

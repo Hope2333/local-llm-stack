@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# ppocr — PP-OCRv4 (mobile, ONNX Runtime CPU) 文本识别
+# 用法:
+#   ppocr 图片.png                # 输出纯文本（按行）
+#   ppocr 图片.png --json         # 输出带坐标/置信度的 JSON
+#   ppocr a.png b.jpg ...         # 多图
+set -uo pipefail
+exec python3 - "$@" <<'PY'
+import sys, json, logging
+from pathlib import Path
+
+logging.disable(logging.INFO)
+from rapidocr import RapidOCR, OCRVersion as V, ModelType as M
+
+args = sys.argv[1:]
+as_json = "--json" in args
+files = [a for a in args if not a.startswith("--")]
+if not files:
+    print("用法: ppocr <图片...> [--json]", file=sys.stderr)
+    sys.exit(2)
+
+eng = RapidOCR(params={
+    "Det.ocr_version": V.PPOCRV4, "Det.model_type": M.MOBILE,
+    "Rec.ocr_version": V.PPOCRV4, "Rec.model_type": M.MOBILE,
+    "Cls.ocr_version": V.PPOCRV4, "Cls.model_type": M.MOBILE,
+})
+
+out = {}
+for f in files:
+    if not Path(f).is_file():
+        print(f"跳过（不存在）: {f}", file=sys.stderr)
+        continue
+    res = eng(f)
+    txts = list(getattr(res, "txts", None) or ())
+    scores = [float(s) for s in (getattr(res, "scores", None) or ())]
+    boxes = getattr(res, "boxes", None)
+    boxes = [[[float(x), float(y)] for x, y in b] for b in (boxes if boxes is not None else [])]
+    out[f] = [{"text": t, "score": s, "box": b} for t, s, b in zip(txts, scores, boxes)]
+
+if as_json:
+    print(json.dumps(out, ensure_ascii=False, indent=2))
+else:
+    for f, items in out.items():
+        if len(out) > 1:
+            print(f"=== {f} ===")
+        for it in items:
+            print(it["text"])
+PY

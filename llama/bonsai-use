@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+# Switch the llama-bonsai service to another local Bonsai-2 variant and restart it.
+# Usage: bonsai-use <family 2B|4B|9B|27B> [quant PQ2_0|PTQ1_0|Q2_0]
+set -euo pipefail
+
+ROOT="$HOME/models/bonsai2"
+ENV_FILE="$HOME/.config/llama-bonsai.env"
+FAMILY="${1:?usage: bonsai-use <2B|4B|9B|27B> [PQ2_0|PTQ1_0|Q2_0]}"
+QUANT="${2:-PQ2_0}"
+
+MODEL="$ROOT/$FAMILY/Ternary-Bonsai-2-$FAMILY-$QUANT.gguf"
+[ -f "$MODEL" ] || { echo "missing model: $MODEL" >&2; exit 1; }
+
+MMPROJ=""
+for cand in "$ROOT/$FAMILY/Ternary-Bonsai-2-$FAMILY-mmproj-Q8_0.gguf" \
+            "$ROOT/$FAMILY/Ternary-Bonsai-2-$FAMILY-mmproj-BF16.gguf"; do
+  [ -f "$cand" ] && { MMPROJ="$cand"; break; }
+done
+[ -n "$MMPROJ" ] || { echo "missing mmproj for $FAMILY" >&2; exit 1; }
+
+MTP="$ROOT/$FAMILY/Ternary-Bonsai-2-$FAMILY-PQ2_0-MTP-Q8_0.gguf"
+[ "$FAMILY" = "27B" ] && MTP=""
+
+sed -i -e "s|^BONSAI_MODEL=.*|BONSAI_MODEL=$MODEL|" \
+       -e "s|^BONSAI_MMPROJ=.*|BONSAI_MMPROJ=$MMPROJ|" \
+       -e "s|^BONSAI_MTP_MODEL=.*|BONSAI_MTP_MODEL=$MTP|" "$ENV_FILE"
+
+systemctl --user restart llama-bonsai
+for _ in $(seq 1 30); do
+  sleep 2
+  if curl -s --max-time 2 http://127.0.0.1:8081/health >/dev/null 2>&1; then
+    echo "active: $FAMILY $QUANT  (mmproj $(basename "$MMPROJ")${MTP:+, MTP on})"
+    exit 0
+  fi
+done
+echo "service did not become healthy; check: journalctl --user -u llama-bonsai -n 50" >&2
+exit 1
