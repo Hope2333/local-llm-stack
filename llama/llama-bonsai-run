@@ -1,39 +1,58 @@
 #!/usr/bin/env bash
-# Compose llama-server args from ~/.config/llama-bonsai.env
+# 由 ~/.config/llama-bonsai.env 拼装 llama-server 参数并启动。
+# 路径支持 ~ 与 ${HOME}，方便配置在不同机器间复用。
 set -euo pipefail
 
 : "${BONSAI_MODEL:?BONSAI_MODEL not set}"
-: "${BONSAI_MMPROJ:?BONSAI_MMPROJ not set}"
+
+# systemd 的 EnvironmentFile 不做变量展开，所以在这里统一处理
+expand() { printf '%s' "${1/#\~/$HOME}"; }
+expand_vars() { expand "$(eval "printf '%s' \"$1\"")"; }
+
+MODEL="$(expand_vars "${BONSAI_MODEL}")"
+[ -f "$MODEL" ] || { echo "模型不存在: $MODEL" >&2; exit 1; }
 
 args=(
-  --model "$BONSAI_MODEL"
-  --mmproj "$BONSAI_MMPROJ"
+  --model "$MODEL"
   --ctx-size "${BONSAI_CTX:-32768}"
   --flash-attn on
   --jinja
   --reasoning "${BONSAI_REASONING:-off}"
   --host "${BONSAI_HOST:-127.0.0.1}"
   --port "${BONSAI_PORT:-8081}"
-  --alias bonsai-2
+  --alias "${BONSAI_ALIAS:-bonsai}"
   --threads "${BONSAI_THREADS:-12}"
   --temp 0.7 --top-p 0.80 --min-p 0 --presence-penalty 1.0
   --repeat-penalty 1.0 --repeat-last-n 64
 )
 
-if [ -n "${BONSAI_DEVICE:-}" ]; then
+# 视觉投影器是可选的：纯文本任务不挂可省 848 MiB 显存
+if [ -n "${BONSAI_MMPROJ:-}" ]; then
+  MMPROJ="$(expand_vars "${BONSAI_MMPROJ}")"
+  [ -f "$MMPROJ" ] || { echo "mmproj 不存在: $MMPROJ" >&2; exit 1; }
+  args+=(--mmproj "$MMPROJ")
+fi
+
+if [ -n "${BONSAI_DEVICE:-}" ] && [ "${BONSAI_NGL:-99}" != "0" ]; then
   args+=(--device "$BONSAI_DEVICE" --n-gpu-layers "${BONSAI_NGL:-99}")
 else
+  # --device none 才是真的不碰 GPU；只写 --n-gpu-layers 0 仍会初始化 Vulkan 并占几 GB
   args+=(--n-gpu-layers 0 --device none)
 fi
 
+[ -n "${BONSAI_CACHE_TYPE:-}" ] && args+=(--cache-type-k "$BONSAI_CACHE_TYPE" --cache-type-v "$BONSAI_CACHE_TYPE")
+[ -n "${BONSAI_OVERRIDE:-}" ]   && args+=(-ot "$BONSAI_OVERRIDE")
+
 if [ -n "${BONSAI_MTP_MODEL:-}" ]; then
+  MTP="$(expand_vars "${BONSAI_MTP_MODEL}")"
+  [ -f "$MTP" ] || { echo "MTP 草稿模型不存在: $MTP" >&2; exit 1; }
   args+=(
-    --model-draft "$BONSAI_MTP_MODEL"
+    --model-draft "$MTP"
     --spec-type draft-mtp
     --spec-draft-n-max "${BONSAI_MTP_N_MAX:-2}"
     --spec-draft-n-min 0
-    --spec-draft-p-min 0
+    --spec-draft-p-min "${BONSAI_MTP_P_MIN:-0}"
   )
 fi
 
-exec "$HOME/opt/llama-prism/bin/llama-server" "${args[@]}"
+exec "${LLAMA_SERVER:-$HOME/opt/llama-prism/bin/llama-server}" "${args[@]}"
