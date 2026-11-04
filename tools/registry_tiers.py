@@ -40,6 +40,7 @@ USABLE_RATIO = 0.92   # 标称显存可用比例（驱动 + 桌面 + 断崖余�
 Q8_RATIO = 1.89       # q8_0 / q4_0 的 KV 体积比（1.0625 / 0.5625）
 
 FFN_SHARE = 0.77      # FFN 占 27B 权重的比例（实测张量统计）
+OFFLOAD_SAFETY = 1.06  # 卸载档实测比线性预测高约 6%（5897 vs 5579 MiB）
 FFN_LAYERS = 64
 
 MODELS = [
@@ -116,7 +117,7 @@ def plan_offload(model: dict, budget: int) -> dict | None:
             continue
         for n_layers in OFFLOAD_CANDIDATES:
             gpu_w = model["w"] * (1 - FFN_SHARE * n_layers / FFN_LAYERS)
-            n = int(gpu_w + model["k"] * ctx / 1024 + model["c"])
+            n = int((gpu_w + model["k"] * ctx / 1024 + model["c"]) * OFFLOAD_SAFETY)
             if n <= budget:
                 return dict(mode="offload", ctx=ctx, cache="q4_0", need=n, layers=n_layers)
     return None
