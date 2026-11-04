@@ -6,7 +6,6 @@ After=network.target
 Type=simple
 WorkingDirectory=%h/models/llm_gateway
 Environment=GATEWAY_PORT=8100
-Environment=GATEWAY_IDLE=300
 ExecStart=%h/.venvs/oxr/bin/python -u %h/models/llm_gateway/gateway.py
 Restart=on-failure
 RestartSec=3

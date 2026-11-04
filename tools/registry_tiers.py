@@ -163,8 +163,10 @@ def build(tier_gib: int) -> dict:
         if m["vision"]:
             entry["mmproj"] = m["mmproj"]
         if plan["mode"] == "offload":
-            entry["override"] = "blk\\.([4-6][0-9])\\.ffn_.*=CPU"
-            entry["estimate"] = f"FFN 下沉 {plan['layers']} 层，约 {plan['need']} MiB"
+            first = FFN_LAYERS - plan["layers"]
+            layers = "|".join(str(i) for i in range(first, FFN_LAYERS))
+            entry["override"] = f"blk\\.({layers})\\.ffn_.*=CPU"
+            entry["estimate"] = f"FFN 下沉 {plan['layers']} 层（blk {first}-{FFN_LAYERS - 1}），约 {plan['need']} MiB"
         models[m["name"]] = entry
 
     models["oxr"] = {
@@ -181,6 +183,7 @@ def build(tier_gib: int) -> dict:
         "profile": {
             "vram_gib": tier_gib,
             "usable_mib": budget,
+            "verified": tier_gib == 8,
             "generated_by": "tools/registry_tiers.py",
             "estimation": "VRAM = W + K*ctx/1024 + C，系数由实测两点回归",
         },

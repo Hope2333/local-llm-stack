@@ -8,6 +8,7 @@
   "profile": {
     "vram_gib": 16,
     "usable_mib": 15073,
+    "verified": false,
     "generated_by": "tools/registry_tiers.py",
     "estimation": "VRAM = W + K*ctx/1024 + C，系数由实测两点回归"
   },
