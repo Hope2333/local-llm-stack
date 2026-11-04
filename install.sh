@@ -4,7 +4,7 @@
 set -euo pipefail
 
 ENABLE=0
-[ "${1:-}" = "--enable" ] || [ "${1:-}" = "-e" ] && ENABLE=1
+if [ "${1:-}" = "--enable" ] || [ "${1:-}" = "-e" ]; then ENABLE=1; fi
 
 REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BIN="$HOME/.local/bin"
@@ -44,9 +44,34 @@ install -m 755 "$REPO/tools/bench.sh"              "$BIN/llm-bench"
 # ---------- 网关 ----------
 say "安装网关"
 install -m 644 "$REPO/gateway/gateway.py" "$HOME/models/llm_gateway/gateway.py"
+
+detect_vram_mib() {
+  if command -v nvidia-smi >/dev/null 2>&1; then
+    nvidia-smi --query-gpu=memory.total --format=csv,noheader,nounits 2>/dev/null \
+      | sort -n | tail -1
+  elif command -v rocm-smi >/dev/null 2>&1; then
+    rocm-smi --showmeminfo vram --csv 2>/dev/null \
+      | awk -F, 'NR>1 {print int($2/1048576)}' | sort -n | tail -1
+  fi
+}
+VRAM_MIB="$(detect_vram_mib || true)"
+TIER=""
+if [ -n "${VRAM_MIB:-}" ]; then
+  for t in 4 6 8 12 16 24 32; do
+    [ "$VRAM_MIB" -ge $((t * 1024)) ] && TIER="$t"
+  done
+  say "检测到显存 ${VRAM_MIB} MiB → 选用 ${TIER:-4}GB 档预设"
+fi
+
 if [ ! -f "$HOME/models/llm_gateway/registry.json" ]; then
-  install -m 644 "$REPO/gateway/registry.example.json" "$HOME/models/llm_gateway/registry.json"
-  say "已从 registry.example.json 生成 registry.json —— 请检查里面的模型路径"
+  if [ -n "$TIER" ] && [ -f "$REPO/gateway/profiles/registry.${TIER}gb.json" ]; then
+    install -m 644 "$REPO/gateway/profiles/registry.${TIER}gb.json" "$HOME/models/llm_gateway/registry.json"
+    say "已按 ${TIER}GB 档生成 registry.json（由 tools/registry_tiers.py 实测回归得出）"
+  else
+    install -m 644 "$REPO/gateway/registry.example.json" "$HOME/models/llm_gateway/registry.json"
+    say "已从 registry.example.json 生成 registry.json —— 请检查模型路径"
+  fi
+  warn "registry 里的模型路径需按实际情况调整；可用 tools/registry_tiers.py 重新生成各档预设"
 else
   say "registry.json 已存在，保留不动"
 fi

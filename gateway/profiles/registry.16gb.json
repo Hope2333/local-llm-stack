@@ -1,0 +1,91 @@
+{
+  "default": "bonsai-9b",
+  "idle_seconds": 300,
+  "port_pool": [
+    8310,
+    8399
+  ],
+  "profile": {
+    "vram_gib": 16,
+    "usable_mib": 15073,
+    "generated_by": "tools/registry_tiers.py",
+    "estimation": "VRAM = W + K*ctx/1024 + C，系数由实测两点回归"
+  },
+  "models": {
+    "bonsai-2b": {
+      "backend": "llama",
+      "kind": "vision",
+      "path": "~/models/bonsai2/2B/Ternary-Bonsai-2-2B-PQ2_0.gguf",
+      "ctx": 262144,
+      "device": "Vulkan1",
+      "n_gpu_layers": 99,
+      "threads": 12,
+      "cache_type": "q4_0",
+      "params": "1.88B",
+      "quant": "PQ2_0",
+      "estimate": "约 2780 MiB",
+      "mmproj": "~/models/bonsai2/2B/Ternary-Bonsai-2-2B-mmproj-Q8_0.gguf"
+    },
+    "bonsai-4b": {
+      "backend": "llama",
+      "kind": "vision",
+      "path": "~/models/bonsai2/4B/Ternary-Bonsai-2-4B-PQ2_0.gguf",
+      "ctx": 262144,
+      "device": "Vulkan1",
+      "n_gpu_layers": 99,
+      "threads": 12,
+      "cache_type": "q4_0",
+      "params": "4.2B",
+      "quant": "PQ2_0",
+      "estimate": "约 4975 MiB",
+      "mmproj": "~/models/bonsai2/4B/Ternary-Bonsai-2-4B-mmproj-Q8_0.gguf"
+    },
+    "bonsai-9b": {
+      "backend": "llama",
+      "kind": "vision",
+      "path": "~/models/bonsai2/9B/Ternary-Bonsai-2-9B-PQ2_0.gguf",
+      "ctx": 262144,
+      "device": "Vulkan1",
+      "n_gpu_layers": 99,
+      "threads": 12,
+      "cache_type": "q4_0",
+      "params": "9B",
+      "quant": "PQ2_0",
+      "estimate": "约 6020 MiB",
+      "mmproj": "~/models/bonsai2/9B/Ternary-Bonsai-2-9B-mmproj-Q8_0.gguf"
+    },
+    "bonsai-27b": {
+      "backend": "llama",
+      "kind": "text",
+      "path": "~/models/bonsai2/27B/Ternary-Bonsai-2-27B-PTQ1_0.gguf",
+      "ctx": 262144,
+      "device": "Vulkan1",
+      "n_gpu_layers": 99,
+      "threads": 12,
+      "cache_type": "q4_0",
+      "params": "27B",
+      "quant": "PTQ1_0",
+      "estimate": "约 10290 MiB"
+    },
+    "bonsai-27b-q2": {
+      "backend": "llama",
+      "kind": "text",
+      "path": "~/models/bonsai2/27B/Ternary-Bonsai-2-27B-PQ2_0.gguf",
+      "ctx": 262144,
+      "device": "Vulkan1",
+      "n_gpu_layers": 99,
+      "threads": 12,
+      "cache_type": "q4_0",
+      "params": "27B",
+      "quant": "PQ2_0",
+      "estimate": "约 11488 MiB"
+    },
+    "oxr": {
+      "backend": "static",
+      "kind": "vision",
+      "url": "http://127.0.0.1:8090/v1",
+      "ctx": 16384,
+      "estimate": "常驻约 3.1 GiB；与 27B 冲突时网关会自动驱逐"
+    }
+  }
+}

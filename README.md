@@ -18,6 +18,7 @@
 - [架构与进程模型](docs/architecture.md)
 - [基准数据](docs/benchmarks.md)
 - [8GB 显存的卸载调优手册](docs/offload-tuning.md)
+- [按显存档位生成的默认配置](docs/vram-tiers.md)
 
 ---
 
@@ -42,6 +43,41 @@
 
 - **`-nkvo`（KV 放内存）是最差的选择**：128K 下只有 6.38 tok/s，因为每生成一个 token 都要把整份 KV 过一遍 PCIe。正确做法是用 `-ot` 把 FFN 下沉到 CPU，让 KV 一步都不离开显存。
 - **MTP 投机解码在 GPU 上是负收益**：4B 带 MTP 54.4 tok/s → 去掉 78.6；9B 带 MTP 39.5 → 去掉 48.3。草稿模型要多吃 2.68 GiB 显存和一份带宽。它只在 CPU 推理时有明显收益（9B：12.4 → 23.0 tok/s）。
+
+---
+
+## 按显存选默认配置
+
+`gateway/profiles/` 下有 4/6/8/12/16/24/32GB 七个档位的 registry 预设，`install.sh` 会用
+`nvidia-smi` 检测显存自动挑一个。表里的数字来自实测回归：
+
+```
+VRAM(MiB) = W + K·ctx/1024 + C        # W=权重, K=每 token KV, C=固定开销
+```
+
+| 显存 | 可用预算 | 2B | 4B | 9B | 27B (PTQ1_0) | 27B (PQ2_0) |
+|---|---:|---|---|---|---|---|
+| 4 GB | 3768 MiB | 256K | 128K | 16K | 32K↓ | — |
+| 6 GB | 5652 MiB | 256K | 256K | 192K | 64K↓ | — |
+| **8 GB** | **7536 MiB** | 256K | 256K | **256K** | **64K** | — |
+| 12 GB | 11304 MiB | 256K | 256K | 256K | 256K | 192K |
+| 16 GB | 15073 MiB | 256K | 256K | 256K | 256K | 256K |
+| 24 GB | 22609 MiB | 256K | 256K | 256K | 256K | 256K |
+| 32 GB | 30146 MiB | 256K | 256K | 256K | 256K | 256K |
+
+`K` = 全量 GPU 的上下文；`↓` = FFN 下沉到 CPU；`—` = 该档不用此量化。
+
+模型系数（实测两点回归，最大偏差 7 MiB）：
+
+| 模型 | W (MiB) | K (KiB/token) | C (MiB) |
+|---|---:|---:|---:|
+| 2B | 483 | 4.38 | 216 |
+| 4B | 1085 | 10.0 | 370 |
+| 9B | 2304 | 10.0 | 196 |
+| 27B | 5663 | 14.6 | 890 |
+
+挂了 mmproj 再加 960 MiB。想按自己的卡重新生成：`python3 tools/registry_tiers.py`。
+细节见 [docs/vram-tiers.md](docs/vram-tiers.md)。
 
 ---
 
